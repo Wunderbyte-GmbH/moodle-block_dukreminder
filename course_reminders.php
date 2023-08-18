@@ -27,14 +27,13 @@
 require_once(dirname(__FILE__)."/inc.php");
 global $DB, $OUTPUT, $PAGE, $cg;
 require_once($CFG->libdir . "/tablelib.php");
+require_once($CFG->libdir . "/datalib.php");
 
 $courseid = required_param('courseid', PARAM_INT);
 $sorting = optional_param('sorting', 'id', PARAM_TEXT);
 $sorttype = optional_param('type', 'asc', PARAM_TEXT);
 
-if (!$course = $DB->get_record('course', array('id' => $courseid))) {
-    print_error('invalidcourse', 'block_simplehtml', $courseid);
-}
+$course = get_course($courseid);
 
 require_login($course);
 
