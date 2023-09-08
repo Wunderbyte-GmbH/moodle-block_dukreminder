@@ -25,15 +25,14 @@
  */
 
 require_once(dirname(__FILE__)."/inc.php");
+require_once($CFG->libdir.'/datalib.php');
 
 global $DB, $OUTPUT, $PAGE, $USER;
 
 $courseid = required_param('courseid', PARAM_INT);
 $reminderid = optional_param('reminderid', 0, PARAM_INT);
 
-if (!$course = $DB->get_record('course', array('id' => $courseid))) {
-    print_error('invalidcourse', 'block_simplehtml', $courseid);
-}
+$course=get_course($courseid);
 
 require_login($course);
 

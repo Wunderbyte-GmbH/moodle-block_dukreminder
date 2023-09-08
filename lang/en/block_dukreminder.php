@@ -77,3 +77,5 @@ $string['email_teacher_notification'] = '{$a->amount} students in the course {$a
 $string['criteria_all'] = 'All';
 $string['criteria_completion'] = 'Course completion';
 $string['criteria_enrolment'] = 'Course subscription';
+
+$string['send_task'] = 'Send course completion reminders';

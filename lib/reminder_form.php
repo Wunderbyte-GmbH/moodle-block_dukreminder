@@ -25,7 +25,8 @@
  */
 
 // Moodleform is defined in formslib.php.
-require_once("$CFG->libdir/formslib.php");
+require_once($CFG->libdir.'/formslib.php');
+require_once($CFG->libdir . '/completionlib.php');
 
 /**
  * Reminder form
@@ -105,23 +106,6 @@ class reminder_form extends moodleform {
         $mform->setDefault('daterelative', 0);
         $mform->disabledIf('daterelative', 'daterelative_completion[number]', 'neq', 0);
         $mform->addHelpButton('daterelative', 'form_daterelative', 'block_dukreminder');
-
-        // DATERELATIVE_COMPLETION
-        /* HIDE
-        // Add elements to your form
-         $mform->addElement('duration', 'daterelative_completion',
-            get_string('form_daterelative_completion','block_dukreminder'));
-         $mform->setDefault('daterelative_completion', 0);
-         $mform->disabledIf('daterelative_completion', 'daterelative[number]', 'neq', 0);
-        */
-
-        // TO_STATUS
-        /* $data = array(0 => get_string('form_to_status_all','block_dukreminder'),
-          1 => get_string('form_to_status_completed','block_dukreminder'),
-          2 => get_string('form_to_status_notcompleted','block_dukreminder'));
-         Add elements to your form.
-         $mform->addElement('hidden', 'to_status', get_string('form_to_status','block_dukreminder'),$data);.
-        */
 
         $mform->addElement('header', 'nameforyourheaderelement', get_string('form_header_criteria', 'block_dukreminder'));
 

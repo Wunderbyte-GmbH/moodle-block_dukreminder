@@ -77,3 +77,5 @@ $string['email_teacher_notification'] = 'Soeben wurden folgende {$a->amount} Per
 $string['criteria_all'] = 'Alle';
 $string['criteria_completion'] = 'Kursabschluss';
 $string['criteria_enrolment'] = 'Kurseinschreibung';
+
+$string['send_task'] = 'Kursabschlusserinnerungen senden';

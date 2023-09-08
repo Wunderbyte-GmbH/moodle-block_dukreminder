@@ -15,19 +15,20 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version details
+ * Task schedule configuration for the block_dukreminder plugin.
  *
- * @package    block_dukreminder
- * @copyright  gtn gmbh <office@gtn-solutions.com>
- * @author       Florian Jungwirth <fjungwirth@gtn-solutions.com>
- * @ideaandconcept Gerhard Schwed <gerhard.schwed@donau-uni.ac.at>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   block_dukreminder
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
-$plugin->version   = 2015050600;        // The current plugin version (Date: YYYYMMDDXX)
-$plugin->requires  = 2020061500;        // Requires Moodle 3.9
-$plugin->component = 'block_dukreminder'; // Full name of the plugin (used for diagnostics)
-$plugin->release = 'v1.0';             // This is our first release
-$plugin->maturity = MATURITY_STABLE;
+$tasks = [
+    [
+        'classname' => 'block_dukreminder\task\send_task',
+        'blocking' => 0,
+        'minute' => '0',
+        'hour' => '0',
+        'day' => '*',
+        'month' => '*',
+        'dayofweek' => '*',
+    ],
+];
