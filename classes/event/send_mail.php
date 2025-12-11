@@ -31,6 +31,7 @@ defined('MOODLE_INTERNAL') || die();
  * send mail
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @copyright  gtn gmbh <office@gtn-solutions.com>
+ * @package    block_dukreminder
  */
 class send_mail extends \core\event\base {
 
@@ -67,28 +68,7 @@ class send_mail extends \core\event\base {
      * @return \moodle_url
      */
     public function get_url() {
-        return new \moodle_url('/blocks/dukreminder/course_reminders.php', array('courseid' => $this->contextinstanceid));
+        // Using [] array syntax.
+        return new \moodle_url('/blocks/dukreminder/course_reminders.php', ['courseid' => $this->contextinstanceid]);
     }
-
-    /**
-     * Return legacy log data.
-     *
-     * @return array
-     */
-    public function get_legacy_logdata() {
-        // Override if you are migrating an add_to_log() call.
-        return array($this->courseid, 'block_dukreminder', 'send mail',
-                'user was notified',
-                $this->objectid, $this->relateduserid);
-    }
-
-    /**
-     * Get legacy eventname
-     * @return string
-     */
-    public static function get_legacy_eventname() {
-        // Override ONLY if you are migrating events_trigger() call.
-        return 'block_dukreminder_send_mail';
-    }
-
 }
