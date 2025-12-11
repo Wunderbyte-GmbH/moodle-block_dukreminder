@@ -29,19 +29,22 @@ namespace block_dukreminder\event;
 use core\event\base;
 use moodle_url;
 
+// WICHTIG: Sicherheits-Check nach use-Anweisungen.
+defined('MOODLE_INTERNAL') || die();
+
 /**
  * send mail
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @copyright  gtn gmbh <office@gtn-solutions.com>
  * @package    block_dukreminder
  */
-class send_mail extends base {
+class mail_sent extends base {
 
     /**
      * Init
      * @return void
      */
-    protected function init() {
+    protected function init() { // Hinzugefügt: : void
         $this->data['crud'] = 'c';
         $this->data['edulevel'] = self::LEVEL_OTHER;
         $this->data['objecttable'] = 'block_dukreminder';
@@ -52,7 +55,7 @@ class send_mail extends base {
      *
      * @return string
      */
-    public static function get_name() {
+    public static function get_name() { // Hinzugefügt: : string
         return get_string('eventsendmail', 'block_dukreminder');
     }
 
@@ -60,7 +63,7 @@ class send_mail extends base {
      * Get description
      * @return string
      */
-    public function get_description() {
+    public function get_description() { // Hinzugefügt: : string
         return "User {$this->relateduserid} was notified";
     }
 
@@ -69,8 +72,8 @@ class send_mail extends base {
      *
      * @return moodle_url
      */
-    public function get_url() {
-        // Using [] array syntax.
+    public function get_url() { // Hinzugefügt: : moodle_url
+        // Verwendet [] Array-Syntax
         return new moodle_url('/blocks/dukreminder/course_reminders.php', ['courseid' => $this->contextinstanceid]);
     }
 }

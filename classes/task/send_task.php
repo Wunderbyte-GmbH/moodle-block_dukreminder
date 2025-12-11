@@ -18,7 +18,7 @@ namespace block_dukreminder\task;
 
 use core\task\scheduled_task;
 use context_course;
-use block_dukreminder\event\send_mail;
+use block_dukreminder\event\mail_sent;
 
 /**
  * Scheduled task to send pending reminders.
@@ -77,7 +77,7 @@ class send_task extends scheduled_task {
                     $DB->insert_record('block_dukreminder_mailssent', ['userid' => $user->id, 'reminderid' => $entry->id, 'timesent' => time()]);
                 }
 
-                $event = send_mail::create([
+                $event = mail_sent::create([
                         'objectid' => $creator->id,
                         'context' => $coursecontext,
                         'other' => ['message' => 'student was notified'],
@@ -109,7 +109,7 @@ class send_task extends scheduled_task {
                 foreach ($teachers as $teacher) {
                     email_to_user($teacher, $creator, $subject, strip_tags($mailtext), $mailtext);
 
-                    $event = send_mail::create([
+                    $event = mail_sent::create([
                             'objectid' => $creator->id,
                             'context' => $coursecontext,
                             'other' => ['message' => 'teacher was notified'],
@@ -131,7 +131,7 @@ class send_task extends scheduled_task {
                         $dummyuser->email = $address;
                         email_to_user($dummyuser, $creator, $subject, strip_tags($mailtext), $mailtext);
 
-                        $event = send_mail::create([
+                        $event = mail_sent::create([
                                 'objectid' => $creator->id,
                                 'context' => $coursecontext,
                                 'other' => ['message' => 'additional user was notified', 'email' => $address],
@@ -149,7 +149,7 @@ class send_task extends scheduled_task {
                     $mailtext = block_dukreminder_get_mail_text($course->fullname, $manager->users, $entry->text_teacher);
                     email_to_user($manager, $creator, $subject, strip_tags($mailtext), $mailtext);
 
-                    $event = send_mail::create([
+                    $event = mail_sent::create([
                             'objectid' => $creator->id,
                             'context' => $coursecontext,
                             'other' => ['message' => 'manager was notified'],
