@@ -17,22 +17,33 @@
 namespace block_dukreminder\task;
 
 use core\task\scheduled_task;
+use context_course;
+use block_dukreminder\event\send_mail;
 
+/**
+ * Scheduled task to send pending reminders.
+ * @package    block_dukreminder
+ * @copyright  gtn gmbh <office@gtn-solutions.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class send_task extends scheduled_task {
     /**
      * Return the task's name as shown in admin screens.
      *
      * @return string
      */
-    public function get_name() {
+    public function get_name(): string {
         return get_string('send_task', 'block_dukreminder');
     }
 
     /**
      * Execute the task.
+     *
+     * @return bool
      */
-    public function execute() {
-        require_once(dirname(__FILE__) . "/../../inc.php");
+    public function execute(): bool {
+        // Robuster Pfad zum Einbinden der Helper-Funktionen.
+        require_once(__DIR__ . "/../../inc.php");
 
         global $DB;
 
@@ -40,15 +51,21 @@ class send_task extends scheduled_task {
 
         foreach ($entries as $entry) {
             $mailssent = 0;
-            $creator = $DB->get_record('user', array('id' => $entry->createdby));
-            $course = $DB->get_record('course', array('id' => $entry->courseid));
-            $coursecontext = \context_course::instance($course->id);
+            $creator = $DB->get_record('user', ['id' => $entry->createdby]);
+            $course = $DB->get_record('course', ['id' => $entry->courseid]);
+            $coursecontext = context_course::instance($course->id);
 
             $users = block_dukreminder_filter_users($entry);
-            $managers = array();
+            $managers = [];
 
             // Go through users and send mails AND save the user managers.
             foreach ($users as $user) {
+                // Wenn E-Mails bereits gesendet wurden, überspringen Sie diesen Benutzer.
+                if ($DB->record_exists('block_dukreminder_mailssent', ['reminderid' => $entry->id, 'userid' => $user->id])) {
+                    mtrace("... email already sent to user $user->id, $user->email => skipped\n");
+                    continue;
+                }
+
                 $user->mailformat = FORMAT_HTML;
 
                 $mailtext = block_dukreminder_replace_placeholders($entry->text, $course->fullname, fullname($user), $user->email);
@@ -56,15 +73,16 @@ class send_task extends scheduled_task {
                 $mailssent++;
 
                 if ($entry->daterelative > 0) {
-                    $DB->insert_record('block_dukreminder_mailssent', array('userid' => $user->id, 'reminderid' => $entry->id));
+                    // Fügt timesent hinzu, um Datenbankfehler zu vermeiden, falls dieses Feld existiert.
+                    $DB->insert_record('block_dukreminder_mailssent', ['userid' => $user->id, 'reminderid' => $entry->id, 'timesent' => time()]);
                 }
 
-                $event = \block_dukreminder\event\send_mail::create(array(
+                $event = send_mail::create([
                         'objectid' => $creator->id,
                         'context' => $coursecontext,
-                        'other' => array('message' => 'student was notified'),
+                        'other' => ['message' => 'student was notified'],
                         'relateduserid' => $user->id
-                ));
+                ]);
                 $event->trigger();
                 mtrace("a reminder mail was sent to student $user->id for $entry->subject");
 
@@ -76,7 +94,7 @@ class send_task extends scheduled_task {
                             $managers[$usermanager->id] = $usermanager;
                         }
                         if (!isset($managers[$usermanager->id]->users)) {
-                            $managers[$usermanager->id]->users = array();
+                            $managers[$usermanager->id]->users = [];
                         }
                         $managers[$usermanager->id]->users[] = $user;
                     }
@@ -84,19 +102,19 @@ class send_task extends scheduled_task {
             }
 
             $mailtext = block_dukreminder_get_mail_text($course->fullname, $users, $entry->text_teacher);
+            $subject = "Reminder report: " . $entry->subject;
 
             if ($entry->to_reporttrainer && $mailssent > 0) {
-                // Get course teachers and send mails.
                 $teachers = block_dukreminder_get_course_teachers($coursecontext);
                 foreach ($teachers as $teacher) {
-                    email_to_user($teacher, $creator, $entry->subject, strip_tags($mailtext), $mailtext);
+                    email_to_user($teacher, $creator, $subject, strip_tags($mailtext), $mailtext);
 
-                    $event = \block_dukreminder\event\send_mail::create(array(
+                    $event = send_mail::create([
                             'objectid' => $creator->id,
                             'context' => $coursecontext,
-                            'other' => array('message' => 'teacher was notified'),
+                            'other' => ['message' => 'teacher was notified'],
                             'relateduserid' => $teacher->id
-                    ));
+                    ]);
                     $event->trigger();
                     mtrace("a report mail was sent to teacher $teacher->id");
                 }
@@ -105,20 +123,20 @@ class send_task extends scheduled_task {
             // Additional recipients.
             if ($entry->to_mail && $mailssent > 0) {
                 $addresses = explode(';', $entry->to_mail);
-                $dummyuser = $DB->get_record('user', array('id' => BLOCK_DUKREMINDER_EMAIL_DUMMY));
+                $dummyuser = $DB->get_record('user', ['id' => BLOCK_DUKREMINDER_EMAIL_DUMMY]);
 
                 foreach ($addresses as $address) {
                     $address = trim($address);
                     if (!empty($address)) {
                         $dummyuser->email = $address;
-                        email_to_user($dummyuser, $creator, $entry->subject, strip_tags($mailtext), $mailtext);
+                        email_to_user($dummyuser, $creator, $subject, strip_tags($mailtext), $mailtext);
 
-                        $event = \block_dukreminder\event\send_mail::create(array(
+                        $event = send_mail::create([
                                 'objectid' => $creator->id,
                                 'context' => $coursecontext,
-                                'other' => array('message' => 'additional user was notified', 'email' => $address),
+                                'other' => ['message' => 'additional user was notified', 'email' => $address],
                                 'relateduserid' => $dummyuser->id
-                        ));
+                        ]);
                         $event->trigger();
                         mtrace("a report mail was sent to $address");
                     }
@@ -129,15 +147,14 @@ class send_task extends scheduled_task {
             if ($entry->to_reportsuperior && $mailssent > 0) {
                 foreach ($managers as $manager) {
                     $mailtext = block_dukreminder_get_mail_text($course->fullname, $manager->users, $entry->text_teacher);
-                    email_to_user($manager, $creator, get_string('pluginname', 'block_dukreminder'), strip_tags($mailtext),
-                            $mailtext);
+                    email_to_user($manager, $creator, $subject, strip_tags($mailtext), $mailtext);
 
-                    $event = \block_dukreminder\event\send_mail::create(array(
+                    $event = send_mail::create([
                             'objectid' => $creator->id,
                             'context' => $coursecontext,
-                            'other' => array('message' => 'manager was notified'),
+                            'other' => ['message' => 'manager was notified'],
                             'relateduserid' => $manager->id
-                    ));
+                    ]);
                     $event->trigger();
                     mtrace("a report mail was sent to manager $manager->id");
                 }
