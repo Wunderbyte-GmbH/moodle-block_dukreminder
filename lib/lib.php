@@ -121,123 +121,174 @@ function block_dukreminder_filter_users($entry) {
 
     require_once($CFG->dirroot . '/lib/completionlib.php');
 
-    // All potential users.
+    // Fetch all potential users (students).
     $users = get_role_users(5, context_course::instance($entry->courseid));
+    if (!$users) {
+        return [];
+    }
 
+    // -------------------------------------------------------------------------
+    // DETECT CRITERIA TYPE
+    // -------------------------------------------------------------------------
+
+    $is_criteria_all        = ($entry->criteria == BLOCK_DUKREMINDER_CRITERIA_ALL);
+    $is_criteria_enrolment  = ($entry->criteria == BLOCK_DUKREMINDER_CRITERIA_ENROLMENT);
+    $is_criteria_completion = ($entry->criteria == BLOCK_DUKREMINDER_CRITERIA_COMPLETION);
+
+    $is_activity_criteria   = (!$is_criteria_all &&
+            !$is_criteria_enrolment &&
+            !$is_criteria_completion);
+
+    // If activity criteria → load DB record safely
+    $activitycriteria = null;
+    if ($is_activity_criteria) {
+        $activitycriteria = $DB->get_record(
+                'course_completion_criteria',
+                ['id' => $entry->criteria],
+                '*',
+                IGNORE_MISSING
+        );
+
+        if (!$activitycriteria) {
+            // Invalid criterion → prevent fatal errors
+            return [];
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // ABSOLUTE DATE REMINDERS
+    // -------------------------------------------------------------------------
     if ($entry->dateabsolute > 0) {
-        // Course completion.
-        if ($entry->criteria == BLOCK_DUKREMINDER_CRITERIA_COMPLETION) {
+
+        // COURSE COMPLETION CRITERIA
+        if ($is_criteria_completion) {
             foreach ($users as $user) {
-                $select = "course = $entry->courseid AND userid = $user->id";
-                $timecompleted = $DB->get_field_select('course_completions', 'timecompleted', $select);
-                // If user has completed and status is "not completed" -> unset.
-                if ($timecompleted) {
-                    //$timecompleted = date("d.m.Y", $timecompleted);
+                $completed = $DB->get_field('course_completions', 'timecompleted',
+                        ['course' => $entry->courseid, 'userid' => $user->id]);
+
+                if ($completed) {
                     unset($users[$user->id]);
                 }
             }
         }
-        // Criteria (activity) completion.
-        else if ($entry->criteria != BLOCK_DUKREMINDER_CRITERIA_ALL) {
-            $course = $DB->get_record('course', array('id' => $entry->courseid));
+
+        // ACTIVITY COMPLETION CRITERIA
+        else if ($is_activity_criteria) {
+
+            $course = $DB->get_record('course', ['id' => $entry->courseid], '*', MUST_EXIST);
             $completion = new completion_info($course);
-            $criteria = completion_criteria::factory((array)$DB->get_record('course_completion_criteria',
-                array('id' => $entry->criteria)));
+
+            // Build activity criterion
+            $criterion = completion_criteria::factory((array)$activitycriteria);
 
             foreach ($users as $user) {
-                $usercompleted = $completion->get_user_completion($user->id, $criteria);
-                if ($usercompleted->is_complete()) {
+                $usercompletion = $completion->get_user_completion($user->id, $criterion);
+                if ($usercompletion->is_complete()) {
                     unset($users[$user->id]);
                 }
             }
         }
     }
 
-    // Filter users by deadline.
+    // -------------------------------------------------------------------------
+    // RELATIVE DATE REMINDERS
+    // -------------------------------------------------------------------------
     else if ($entry->daterelative > 0) {
-        if ($entry->criteria == BLOCK_DUKREMINDER_CRITERIA_ENROLMENT) {
-            // If reminder has relative date: check if user has already got an email.
-            $mailssent = $DB->get_records('block_dukreminder_mailssent', array('reminderid' => $entry->id), '', 'userid');
 
-            $enabledenrolplugins = implode(',', $DB->get_fieldset_select('enrol', 'id', "courseid = $entry->courseid"));
-            // Check user enrolment dates.
+        // Load sent mail records
+        $mailssent = $DB->get_records('block_dukreminder_mailssent',
+                ['reminderid' => $entry->id],
+                '',
+                'userid'
+        );
+
+        // RELATIVE ENROLMENT DATE
+        if ($is_criteria_enrolment) {
+
+            $enrolids = implode(',',
+                    $DB->get_fieldset_select('enrol', 'id', "courseid = {$entry->courseid}")
+            );
+
             foreach ($users as $user) {
-                // If user has already got an email -> unset.
-                if (array_key_exists($user->id, $mailssent)) {
+
+                if (isset($mailssent[$user->id])) {
                     unset($users[$user->id]);
+                    continue;
                 }
 
-                $enrolmenttime = $DB->get_field_select('user_enrolments',
-                    'timestart',
-                    "userid = $user->id AND enrolid IN ($enabledenrolplugins)");
-                // If user is longer enroled than the deadline is long -> unset.
-                if ($enrolmenttime + $entry->daterelative > time()) {
+                $timestart = $DB->get_field_select('user_enrolments', 'timestart',
+                        "userid = {$user->id} AND enrolid IN ($enrolids)");
+
+                if (!$timestart || ($timestart + $entry->daterelative > time())) {
                     unset($users[$user->id]);
                 }
             }
         }
-        else if ($entry->criteria == BLOCK_DUKREMINDER_CRITERIA_COMPLETION) {
-            // If reminder has relative date: check if user has already got an email.
-            $mailssent = $DB->get_records('block_dukreminder_mailssent', array('reminderid' => $entry->id), '', 'userid');
 
-            // Check user completion dates.
+        // RELATIVE COURSE COMPLETION DATE
+        else if ($is_criteria_completion) {
+
             foreach ($users as $user) {
-                // If user has already got an email -> unset.
-                if (array_key_exists($user->id, $mailssent)) {
+
+                if (isset($mailssent[$user->id])) {
                     unset($users[$user->id]);
+                    continue;
                 }
 
-                $completiontime = $DB->get_field('course_completions',
-                    'timecompleted',
-                    array('userid' => $user->id, 'course' => $entry->courseid));
-                // If user completion is not long enough ago -> unset.
+                $completiontime = $DB->get_field(
+                        'course_completions',
+                        'timecompleted',
+                        ['userid' => $user->id, 'course' => $entry->courseid]
+                );
+
                 if (!$completiontime || ($completiontime + $entry->daterelative > time())) {
                     unset($users[$user->id]);
                 }
             }
         }
 
-        else {
-            // If reminder has relative date: check if user has already got an email.
-            $mailssent = $DB->get_records('block_dukreminder_mailssent', array('reminderid' => $entry->id), '', 'userid');
+        // RELATIVE ACTIVITY COMPLETION DATE
+        else if ($is_activity_criteria) {
 
-            $course = $DB->get_record('course', array('id' => $entry->courseid));
+            $course = $DB->get_record('course', ['id' => $entry->courseid], '*', MUST_EXIST);
             $completion = new completion_info($course);
-            $criteria = completion_criteria::factory((array)$DB->get_record('course_completion_criteria',
-                array('id' => $entry->criteria)));
+            $criterion = completion_criteria::factory((array)$activitycriteria);
 
-            // Check user completion dates.
             foreach ($users as $user) {
-                // If user has already got an email -> unset.
-                if (array_key_exists($user->id, $mailssent)) {
+
+                if (isset($mailssent[$user->id])) {
                     unset($users[$user->id]);
+                    continue;
                 }
 
-                $usercompleted = $completion->get_user_completion($user->id, $criteria);
-                // If user criteria completion is not long enough ago -> unset.
-                if (!isset($usercompleted->timecompleted) || ($usercompleted->timecompleted + $entry->daterelative > time())) {
+                $usercompletion = $completion->get_user_completion($user->id, $criterion);
+
+                if (!$usercompletion->timecompleted ||
+                        ($usercompletion->timecompleted + $entry->daterelative > time())
+                ) {
                     unset($users[$user->id]);
                 }
             }
         }
     }
-    // Filter users by groups: REVERSED, send to users that are not in the groups.
-    $groupids = explode(';', $entry->to_groups);
-    if ($entry->to_groups) {
+
+    // -------------------------------------------------------------------------
+    // GROUP FILTER (invert logic: remove users IN selected groups)
+    // -------------------------------------------------------------------------
+    if (!empty($entry->to_groups)) {
+
+        $groupids = explode(';', $entry->to_groups);
+
         foreach ($users as $user) {
-            // If user is  part in 1 or more group -> unset.
-            $ismember = false;
-            foreach ($groupids as $groupid) {
-                if (groups_is_member($groupid, $user->id)) {
-                    $ismember = true;
+            foreach ($groupids as $gid) {
+                if (groups_is_member($gid, $user->id)) {
+                    unset($users[$user->id]);
+                    break;
                 }
-            }
-
-            if ($ismember) {
-                unset($users[$user->id]);
             }
         }
     }
+
     return $users;
 }
 
