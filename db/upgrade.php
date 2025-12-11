@@ -27,7 +27,6 @@
 /**
  * Dukreminder upgrade
  * @param integer $oldversion
- * @return void
  */
 function xmldb_block_dukreminder_upgrade($oldversion) {
     global $DB, $CFG;
@@ -113,8 +112,8 @@ function xmldb_block_dukreminder_upgrade($oldversion) {
             $old->criteria = 250001;
             $DB->update_record('block_dukreminder', $old);
         }
-
         // Dukreminder savepoint reached.
         upgrade_block_savepoint(true, 2014102800, 'dukreminder');
     }
+    return true;
 }
