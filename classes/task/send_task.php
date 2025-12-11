@@ -16,7 +16,9 @@
 
 namespace block_dukreminder\task;
 
-class send_task extends \core\task\scheduled_task {
+use core\task\scheduled_task;
+
+class send_task extends scheduled_task {
     /**
      * Return the task's name as shown in admin screens.
      *

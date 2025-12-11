@@ -91,7 +91,7 @@ function block_dukreminder_get_pending_reminders() {
  * @param string $usermail
  * @param string $users
  * @param string $usercount
- * @return void
+ * @return string
  */
 function block_dukreminder_replace_placeholders($text, $coursename = '', $username = '',
             $usermail = '', $users = '', $usercount = '') {
@@ -266,7 +266,7 @@ function block_dukreminder_get_manager($user) {
  * @param string $course
  * @param array $users
  * @param boolean $textteacher
- * @return void
+ * @return string
  */
 function block_dukreminder_get_mail_text($course, $users, $textteacher = null) {
 

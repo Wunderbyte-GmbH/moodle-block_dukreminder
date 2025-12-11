@@ -25,7 +25,9 @@
  */
 
 namespace block_dukreminder\event;
-defined('MOODLE_INTERNAL') || die();
+
+use core\event\base;
+use moodle_url;
 
 /**
  * send mail
@@ -33,7 +35,7 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright  gtn gmbh <office@gtn-solutions.com>
  * @package    block_dukreminder
  */
-class send_mail extends \core\event\base {
+class send_mail extends base {
 
     /**
      * Init
@@ -65,10 +67,10 @@ class send_mail extends \core\event\base {
     /**
      * Get URL related to the action
      *
-     * @return \moodle_url
+     * @return moodle_url
      */
     public function get_url() {
         // Using [] array syntax.
-        return new \moodle_url('/blocks/dukreminder/course_reminders.php', ['courseid' => $this->contextinstanceid]);
+        return new moodle_url('/blocks/dukreminder/course_reminders.php', ['courseid' => $this->contextinstanceid]);
     }
 }

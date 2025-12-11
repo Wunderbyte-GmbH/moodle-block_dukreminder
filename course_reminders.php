@@ -25,7 +25,7 @@
  */
 
 require_once(dirname(__FILE__)."/inc.php");
-global $DB, $OUTPUT, $PAGE, $cg;
+global $DB, $OUTPUT, $PAGE, $CFG, $COURSE;
 require_once($CFG->libdir . "/tablelib.php");
 require_once($CFG->libdir . "/datalib.php");
 

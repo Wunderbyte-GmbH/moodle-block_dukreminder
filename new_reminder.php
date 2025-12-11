@@ -45,7 +45,7 @@ $PAGE->set_url('/blocks/dukreminder/new_reminder.php', array('courseid' => $cour
 $PAGE->set_heading(get_string('pluginname', 'block_dukreminder'));
 $PAGE->set_title(get_string($pageidentifier, 'block_dukreminder'));
 block_dukreminder_init_js_css();
-$PAGE->requires->js('/blocks/dukreminder/lib/form.js', true);
+$PAGE->requires->js_call_amd('block_dukreminder/form', 'init');
 
 // Build breadcrumbs navigation.
 $coursenode = $PAGE->navigation->find($courseid, navigation_node::TYPE_COURSE);
@@ -72,7 +72,7 @@ $mform = new reminder_form($PAGE->url,
 if ($mform->is_cancelled()) {
     // Handle form cancel operation, if cancel button is present on form.
     $df = 1;
-    
+
     // Go back to reminder overview
     $url = new moodle_url('/blocks/dukreminder/course_reminders.php', array('courseid' => $PAGE->course->id));
     redirect($url);
