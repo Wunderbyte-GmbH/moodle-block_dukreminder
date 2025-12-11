@@ -35,7 +35,7 @@ class block_dukreminder extends block_list {
 
     /**
      * Init
-     * @return nothing
+     * @return void
     */
      public function init() {
         $this->title = get_string('pluginname', 'block_dukreminder');

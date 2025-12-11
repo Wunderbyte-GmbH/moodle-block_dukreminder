@@ -36,7 +36,7 @@ require_once($CFG->libdir . '/completionlib.php');
 class reminder_form extends moodleform {
     /**
      * Add elements to form.
-     * @return nothing
+     * @return void
      */
     public function definition() {
         global $CFG, $COURSE, $DB;
@@ -203,7 +203,7 @@ class reminder_form extends moodleform {
      * Validation
      * @param array $data
      * @param array $files
-     * @return nothing
+     * @return void
      */
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);

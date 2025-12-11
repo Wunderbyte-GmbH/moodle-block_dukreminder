@@ -36,7 +36,7 @@ class send_mail extends \core\event\base {
 
     /**
      * Init
-     * @return nothing
+     * @return void
      */
     protected function init() {
         $this->data['crud'] = 'c';

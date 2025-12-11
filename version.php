@@ -26,8 +26,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2024101600;        // The current plugin version (Date: YYYYMMDDXX)
-$plugin->requires  = 2020061500;        // Requires Moodle 3.9
+$plugin->version   = 2025121100;        // The current plugin version (Date: YYYYMMDDXX)
+$plugin->requires  = 2024100100;        // Requires Moodle 3.9
 $plugin->component = 'block_dukreminder'; // Full name of the plugin (used for diagnostics)
-$plugin->release = 'v1.0';             // This is our first release
+$plugin->release = 'v1.1';             // This is our first release
 $plugin->maturity = MATURITY_STABLE;

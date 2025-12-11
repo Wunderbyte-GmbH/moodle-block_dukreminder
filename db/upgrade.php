@@ -27,7 +27,7 @@
 /**
  * Dukreminder upgrade
  * @param integer $oldversion
- * @return nothing
+ * @return void
  */
 function xmldb_block_dukreminder_upgrade($oldversion) {
     global $DB, $CFG;
