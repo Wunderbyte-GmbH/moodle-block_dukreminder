@@ -62,15 +62,17 @@ class send_task extends scheduled_task {
             foreach ($users as $user) {
                 // Wenn E-Mails bereits gesendet wurden, überspringen Sie diesen Benutzer.
                 if ($DB->record_exists('block_dukreminder_mailssent', ['reminderid' => $entry->id, 'userid' => $user->id])) {
-                    mtrace("... email already sent to user $user->id, $user->email => skipped\n");
+                    mtrace("... email already sent to user $user->id => skipped\n");
                     continue;
                 }
 
                 $user->mailformat = FORMAT_HTML;
 
-                $mailtext = block_dukreminder_replace_placeholders($entry->text, $course->fullname, fullname($user), $user->email);
-                email_to_user($user, $creator, $entry->subject, strip_tags($mailtext), $mailtext);
-                $mailssent++;
+                if(!empty($user->email)) {
+                    $mailtext = block_dukreminder_replace_placeholders($entry->text, $course->fullname, fullname($user), $user->email);
+                    email_to_user($user, $creator, $entry->subject, strip_tags($mailtext), $mailtext);
+                    $mailssent++;
+                }
 
                 if ($entry->daterelative > 0) {
                     // Fügt timesent hinzu, um Datenbankfehler zu vermeiden, falls dieses Feld existiert.
@@ -123,7 +125,7 @@ class send_task extends scheduled_task {
             // Additional recipients.
             if ($entry->to_mail && $mailssent > 0) {
                 $addresses = explode(';', $entry->to_mail);
-                $dummyuser = $DB->get_record('user', ['id' => BLOCK_DUKREMINDER_EMAIL_DUMMY]);
+                $dummyuser = \core_user::get_noreply_user();
 
                 foreach ($addresses as $address) {
                     $address = trim($address);
