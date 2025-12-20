@@ -15,19 +15,38 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version details
+ * Event observer for block_dukreminder.
  *
  * @package    block_dukreminder
- * @copyright  gtn gmbh <office@gtn-solutions.com>
- * @author       Florian Jungwirth <fjungwirth@gtn-solutions.com>
- * @ideaandconcept Gerhard Schwed <gerhard.schwed@donau-uni.ac.at>
+ * @copyright  2025 David Bogner Wunderbyte GmbH
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+namespace block_dukreminder;
+
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2025122000;        // The current plugin version (Date: YYYYMMDDXX)
-$plugin->requires  = 2024100100;        // Requires Moodle 3.9
-$plugin->component = 'block_dukreminder'; // Full name of the plugin (used for diagnostics)
-$plugin->release = 'v1.2';             // This is our first release
-$plugin->maturity = MATURITY_STABLE;
+/**
+ * Event observer class.
+ */
+class observer {
+
+    /**
+     * Delete all reminder entries associated with a course when that course is deleted.
+     *
+     * @param \core\event\course_deleted $event
+     * @return void
+     */
+    public static function course_deleted(\core\event\course_deleted $event) {
+        global $DB;
+        // The objectid of the course_deleted event is the ID of the course.
+        $courseid = $event->objectid;
+
+        if (!$courseid) {
+            return;
+        }
+
+        // Delete records from block_dukreminder where courseid matches.
+        $DB->delete_records('block_dukreminder', ['courseid' => $courseid]);
+    }
+}

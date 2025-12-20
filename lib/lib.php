@@ -74,12 +74,21 @@ function block_dukreminder_init_js_css() {
  */
 function block_dukreminder_get_pending_reminders() {
     global $DB;
-    $entries = $DB->get_records('block_dukreminder', array('sent' => 0));
     $now = time();
-
     $entries = $DB->get_records_select('block_dukreminder',
-        "(sent = 0 AND dateabsolute > 0 AND dateabsolute < $now) OR (dateabsolute = 0 AND daterelative > 0)");
+    "status = 0 AND ((sent = 0 AND dateabsolute > 0 AND dateabsolute < $now) OR (dateabsolute = 0 AND daterelative > 0))");
 
+    // Check for non existing (deleted) courses and unset the related reminders.
+    foreach ($entries as $entry) {
+        $course = $DB->record_exists('course', ['id' => $entry->courseid]);
+        if (!$course) {
+            mtrace("... course $entry->courseid does not exist (perhaps deleted) => skipped<br/>");
+            unset($entries[$entry->id]);
+            // Delete record from DB so it is not fetched forever.
+            $DB->delete_records('block_dukreminder', ['id' => $entry->id]);
+        }
+    }
+    mtrace("... " . count($entries) . " pending reminder(s) found<br/>");
     return $entries;
 }
 
@@ -93,8 +102,8 @@ function block_dukreminder_get_pending_reminders() {
  * @param string $usercount
  * @return string
  */
-function block_dukreminder_replace_placeholders($text, $coursename = '', $username = '',
-            $usermail = '', $users = '', $usercount = '') {
+function block_dukreminder_replace_placeholders(string $text, string $coursename = '', string $username = '',
+            string $usermail = '', string $users = '', string $usercount = ''): string {
 
     $text = str_replace(BLOCK_DUKREMINDER_PLACEHOLDER_COURSENAME, $coursename, $text);
     $text = str_replace(BLOCK_DUKREMINDER_PLACEHOLDER_USERMAIL, $usermail, $text);
